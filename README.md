@@ -3,7 +3,7 @@
 
 ## Stacking method for multiclass classification
 
-<center>_Oleksii Hrinchuk_</center><br>
+->_Oleksii Hrinchuk_<-<br>
 <center>_Mikhail Karasikov_</center><br>
 
 ## Problem
