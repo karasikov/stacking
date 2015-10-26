@@ -3,9 +3,8 @@
 
 ## Stacking method for multiclass classification
 
-<!-- Oleksii Hrinchuk --!>
-
-<center>_Mikhail Karasikov_</center>
+<center>_Oleksii Hrinchuk_</center><br>
+<center>_Mikhail Karasikov_</center><br>
 
 ## Problem
 
