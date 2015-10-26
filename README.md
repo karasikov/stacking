@@ -3,7 +3,7 @@
 
 ## Stacking method for multiclass classification
 
--> Oleksii Hrinchuk <-
+<!-- Oleksii Hrinchuk --!>
 
 <center>_Mikhail Karasikov_</center>
 
