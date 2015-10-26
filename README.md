@@ -3,8 +3,9 @@
 
 ## Stacking method for multiclass classification
 
-->_Oleksii Hrinchuk_<-<br>
-<center>_Mikhail Karasikov_</center><br>
+-> Oleksii Hrinchuk <-
+
+<center>_Mikhail Karasikov_</center>
 
 ## Problem
 
