@@ -3,7 +3,7 @@
 """Stacking learning method library"""
 
 import numpy as np
-from sklearn.cross_validation import Kfold
+from sklearn.cross_validation import KFold
 
 class Classifier(object):
     """Classifier wrapper"""
