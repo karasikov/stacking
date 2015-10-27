@@ -93,7 +93,7 @@ class MultiStacking(object):
     """Base class for stacking method of learning"""
 
     def __init__(self, fitters, 
-                 split=lambda I: [[I[0::3], I[1::3], I[2::3]], [I[1::3], I[2::3], I[0::3]]],
+                 split=lambda I: [slice_list(I.size, 3) for i in xrange(3)],
                  decision_rule=lambda estimations: max(set(estimations), key=estimations.count)):
         self.split = split
         self.fitters = fitters
@@ -180,3 +180,20 @@ class MultiStacking(object):
         y_predicted = [self.decision_rule(list(estimations)) for estimations in estimations_matrix]
 
         return y_predicted
+
+
+def slice_list(sample_size, n):
+    
+    I = np.arange(sample_size)
+    np.random.shuffle(I)
+   
+    remain = I.size % n
+    result = []
+    start = 0
+    
+    for i in xrange(n):
+        slice_size = I.size / n + (remain > 0)
+        remain -= 1
+        result.append(I[start : start + slice_size])
+        start = start + slice_size
+    return result
