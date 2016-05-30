@@ -12,7 +12,7 @@ from sklearn.base import ClassifierMixin, BaseEstimator
 class Stacking(BaseEstimator, ClassifierMixin):
     """Base class for stacking method of learning"""
 
-    def __init__(self, base_estimators, meta_fitter, n_folds=3, extend_meta=False):
+    def __init__(self, base_estimators, meta_fitter=None, n_folds=3, extend_meta=False):
         """Initialize Stacking
 
         Input parameters:
@@ -51,13 +51,21 @@ class Stacking(BaseEstimator, ClassifierMixin):
             X_meta.append(np.hstack(meta_features))
             y_meta.extend(y[meta_subsample])
 
-        X_meta = np.vstack(X_meta)
-        self.meta_classifier = self.meta_fitter(X_meta, y_meta)
+        self.X_meta = np.vstack(X_meta)
+        self.y_meta = y_meta
 
         self.base_classifiers = [(fit(X, y), predict)
                                     for (fit, predict) in self.base_estimators]
+        if self.meta_fitter:
+            self.fit_meta(self.meta_fitter)
+
         return self
 
+    def fit_meta(self, meta_fitter):
+        if not hasattr(self, 'X_meta'):
+            raise Exception("Fit base classifiers first")
+        self.meta_classifier = meta_fitter(self.X_meta, self.y_meta)
+        return self
 
     def predict(self, X):      
         """Predict class for X.
@@ -71,6 +79,9 @@ class Stacking(BaseEstimator, ClassifierMixin):
         Output:
             y : array of shape = [n_samples] -- predicted classes
         """
+        if not hasattr(self, 'meta_classifier'):
+            raise Exception("Fit meta classifier first")
+
         estimations_meta = [X] if self.extend_meta else []
 
         for base_clf, predict in self.base_classifiers:
