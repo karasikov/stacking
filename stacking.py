@@ -37,6 +37,7 @@ class Stacking(BaseEstimator, ClassifierMixin):
         """
         self.base_predictors = []
         X_meta, y_meta = [], []
+        X = np.array(X)
         y = np.array(y)
 
         for base_subsample, meta_subsample in KFold(X.shape[0], self.n_folds, True):
@@ -82,6 +83,7 @@ class Stacking(BaseEstimator, ClassifierMixin):
         if not hasattr(self, 'meta_classifier'):
             raise Exception("Fit meta classifier first")
 
+        X = np.array(X)
         estimations_meta = [X] if self.extend_meta else []
 
         for base_clf, predict in self.base_classifiers:
