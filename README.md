@@ -9,7 +9,7 @@ $X = \{x_1,\dots,x_n\}$ - images
 $a:X \to \{0,\dots,9\}$ - classifier
 
 
-![png](output_5_0.png)
+![png](pics/output_5_0.png)
 
 Quality function: $$ Q(a) = \frac{1}{n} \sum_{i=1}^n 1[a(x_i)=y_i] $$
 
@@ -31,7 +31,7 @@ $X = USV^T \to \hat{X} = X V_r V_r^T$
 
 ## Stacking
 
-![](stacking.png)
+![](pics/stacking.png)
 
 ### Splitting data to avoid underfitting
 * Bootstrap
