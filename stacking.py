@@ -7,12 +7,15 @@
 import numpy as np
 from sklearn.cross_validation import KFold
 from sklearn.base import ClassifierMixin, BaseEstimator
+import scipy
+import multiprocessing
+import multiprocessing.dummy
 
 
 class Stacking(BaseEstimator, ClassifierMixin):
     """Base class for stacking method of learning"""
 
-    def __init__(self, base_estimators, meta_fitter=None, n_folds=3, extend_meta=False):
+    def __init__(self, base_estimators, meta_fitter=None, get_folds=None, n_folds=3, extend_meta=False, n_jobs=1):
         """Initialize Stacking
 
         Input parameters:
@@ -22,8 +25,13 @@ class Stacking(BaseEstimator, ClassifierMixin):
         """
         self.base_estimators = base_estimators
         self.meta_fitter = meta_fitter
+        if get_folds:
+            self.get_folds = get_folds
+        else:
+            self.get_folds = lambda y, n_folds: KFold(len(y), n_folds, True)
         self.n_folds = n_folds
         self.extend_meta = extend_meta
+        self.n_jobs = n_jobs
 
     def fit(self, X, y):
         """Build compositions of classifiers.
@@ -36,11 +44,11 @@ class Stacking(BaseEstimator, ClassifierMixin):
             self : object
         """
         self.base_predictors = []
-        X_meta, y_meta = [], []
-        X = np.array(X)
+        X = scipy.sparse.csr_matrix(X)
         y = np.array(y)
 
-        for base_subsample, meta_subsample in KFold(X.shape[0], self.n_folds, True):
+        def train_partition(args):
+            base_subsample, meta_subsample = args
             meta_features = [X[meta_subsample]] if self.extend_meta else []
             for fit, predict in self.base_estimators:
                 base_clf = fit(X[base_subsample], y[base_subsample])
@@ -48,11 +56,21 @@ class Stacking(BaseEstimator, ClassifierMixin):
                 meta_features.append(
                     predict(base_clf, X[meta_subsample]).reshape(meta_subsample.size, -1)
                 )
-                
-            X_meta.append(np.hstack(meta_features))
-            y_meta.extend(y[meta_subsample])
 
-        self.X_meta = np.vstack(X_meta)
+            return scipy.sparse.hstack(meta_features), y[meta_subsample]
+
+        if self.n_jobs > 1:
+            pool = multiprocessing.Pool(processes=self.n_jobs)
+        else:
+            pool = multiprocessing.dummy.Pool(processes=1)
+
+        results = pool.map(train_partition, self.get_folds(y, self.n_folds))
+        X_meta, y_meta = [], []
+        for meta_features_k, y_k in results:
+            X_meta.append(meta_features_k)
+            y_meta.extend(y_k)
+
+        self.X_meta = scipy.sparse.vstack(X_meta)
         self.y_meta = y_meta
 
         self.base_classifiers = [(fit(X, y), predict)
@@ -83,10 +101,10 @@ class Stacking(BaseEstimator, ClassifierMixin):
         if not hasattr(self, 'meta_classifier'):
             raise Exception("Fit meta classifier first")
 
-        X = np.array(X)
+        X = scipy.sparse.csr_matrix(X)
         estimations_meta = [X] if self.extend_meta else []
 
         for base_clf, predict in self.base_classifiers:
             estimations_meta.append(predict(base_clf, X).reshape(X.shape[0], -1))
 
-        return self.meta_classifier.predict(np.hstack(estimations_meta))
+        return self.meta_classifier.predict(scipy.sparse.hstack(estimations_meta))
