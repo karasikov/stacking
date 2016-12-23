@@ -8,14 +8,12 @@ import numpy as np
 from sklearn.cross_validation import KFold
 from sklearn.base import ClassifierMixin, BaseEstimator
 import scipy
-import multiprocessing
-import multiprocessing.dummy
 
 
 class Stacking(BaseEstimator, ClassifierMixin):
     """Base class for stacking method of learning"""
 
-    def __init__(self, base_estimators, meta_fitter=None, get_folds=None, n_folds=3, extend_meta=False, n_jobs=1):
+    def __init__(self, base_estimators, meta_fitter=None, get_folds=None, n_folds=3, extend_meta=False):
         """Initialize Stacking
 
         Input parameters:
@@ -31,7 +29,6 @@ class Stacking(BaseEstimator, ClassifierMixin):
             self.get_folds = lambda y, n_folds: KFold(len(y), n_folds, True)
         self.n_folds = n_folds
         self.extend_meta = extend_meta
-        self.n_jobs = n_jobs
 
     def fit(self, X, y):
         """Build compositions of classifiers.
@@ -47,31 +44,18 @@ class Stacking(BaseEstimator, ClassifierMixin):
         X = scipy.sparse.csr_matrix(X)
         y = np.array(y)
 
-        def train_partition(args):
-            base_subsample, meta_subsample = args
+        self.X_meta, self.y_meta = [], []
+        for base_subsample, meta_subsample in self.get_folds(y, self.n_folds):
             meta_features = [X[meta_subsample]] if self.extend_meta else []
             for fit, predict in self.base_estimators:
                 base_clf = fit(X[base_subsample], y[base_subsample])
-
                 meta_features.append(
                     predict(base_clf, X[meta_subsample]).reshape(meta_subsample.size, -1)
                 )
+            self.X_meta.append(scipy.sparse.hstack(meta_features))
+            self.y_meta.extend(y[meta_subsample])
 
-            return scipy.sparse.hstack(meta_features), y[meta_subsample]
-
-        if self.n_jobs > 1:
-            pool = multiprocessing.Pool(processes=self.n_jobs)
-        else:
-            pool = multiprocessing.dummy.Pool(processes=1)
-
-        results = pool.map(train_partition, self.get_folds(y, self.n_folds))
-        X_meta, y_meta = [], []
-        for meta_features_k, y_k in results:
-            X_meta.append(meta_features_k)
-            y_meta.extend(y_k)
-
-        self.X_meta = scipy.sparse.vstack(X_meta)
-        self.y_meta = y_meta
+        self.X_meta = scipy.sparse.vstack(self.X_meta)
 
         self.base_classifiers = [(fit(X, y), predict)
                                     for (fit, predict) in self.base_estimators]
