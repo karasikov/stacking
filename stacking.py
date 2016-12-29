@@ -50,7 +50,9 @@ class Stacking(BaseEstimator, ClassifierMixin):
             for fit, predict in self.base_estimators:
                 base_clf = fit(X[base_subsample], y[base_subsample])
                 meta_features.append(
-                    predict(base_clf, X[meta_subsample]).reshape(meta_subsample.size, -1)
+                    scipy.sparse.csr_matrix(
+                        predict(base_clf, X[meta_subsample]).reshape(meta_subsample.size, -1)
+                    )
                 )
             self.X_meta.append(scipy.sparse.hstack(meta_features))
             self.y_meta.extend(y[meta_subsample])
@@ -89,6 +91,8 @@ class Stacking(BaseEstimator, ClassifierMixin):
         estimations_meta = [X] if self.extend_meta else []
 
         for base_clf, predict in self.base_classifiers:
-            estimations_meta.append(predict(base_clf, X).reshape(X.shape[0], -1))
+            estimations_meta.append(
+                scipy.sparse.csr_matrix(predict(base_clf, X).reshape(X.shape[0], -1))
+            )
 
         return self.meta_classifier.predict(scipy.sparse.hstack(estimations_meta))
