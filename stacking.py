@@ -62,14 +62,16 @@ class Stacking(BaseEstimator, ClassifierMixin):
         self.base_classifiers = [(fit(X, y), predict)
                                     for (fit, predict) in self.base_estimators]
         if self.meta_fitter:
-            self.fit_meta(self.meta_fitter)
+            self._fit_meta(self.meta_fitter)
 
         return self
 
-    def fit_meta(self, meta_fitter):
+    def _fit_meta(self, meta_fitter):
         if not hasattr(self, 'X_meta'):
             raise Exception("Fit base classifiers first")
         self.meta_classifier = meta_fitter(self.X_meta, self.y_meta)
+        self.__delattr__('X_meta')
+        self.__delattr__('y_meta')
         return self
 
     def predict(self, X):      
